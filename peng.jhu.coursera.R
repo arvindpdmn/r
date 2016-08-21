@@ -1,9 +1,17 @@
-# Programming assignments as part of a Coursera module titled
-# "R Programming" by Roger D. Peng
+# Programming assignments as part of a Coursera series of modules titled
+# Data Science Specialization by Roger D. Peng, Brian Caffo, Jeff Leek
+# 2. R Programming
+# 3. Getting and Cleaning Data
+# 4. Exploratory Data Analysis
+# 5. Reproducible Research
+# 6. Statistical Inference
+# 7. Regression Models
+# 8. Practical Machine Learning
+# 9. Developing Data Products
 
 
 #==============================================================================
-# Assignment 1
+# Assignment 2.1
 #==============================================================================
 # monthMean("/home/arvindpdmn/Downloads/q1.csv", c("Ozone", "Solar.R", "Wind"))
 monthMean <- function(datafile, fields) {
@@ -13,7 +21,7 @@ monthMean <- function(datafile, fields) {
 
 
 #==============================================================================
-# Assignment 2
+# Assignment 2.2
 #==============================================================================
 # pollutantmean("/home/arvindpdmn/Downloads/q2", "sulfate", c(1,2,20))
 pollutantmean <- function(directory, pollutant, id = 1:332) {
@@ -69,7 +77,7 @@ corr <- function(directory, threshold = 0) {
 
 
 #==============================================================================
-# Assignment 3
+# Assignment 2.3
 #==============================================================================
 processNum <- function(num) {
     if (num == "best") {
@@ -191,3 +199,45 @@ rankSummaryForMortality <- function(outcome, num = "best") {
     return(d)
 }
 
+
+#==============================================================================
+# Assignment 3.1
+#==============================================================================
+realEstateIdaho1 <- function() {
+    # Read directly if we don't want to save the file
+    # d<- read.csv("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06hid.csv")
+    download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06hid.csv", "data.csv", method="curl", quiet=T)
+    d <- read.csv("data.csv")
+    highValue <- d$VAL>=24 # from code book, 24 => property value >= $1,000,000
+    cat(table(highValue)[2]) # take only the count for TRUE
+}
+
+naturalGas <- function() {
+    library(xlsx)
+    download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FDATA.gov_NGAP.xlsx", "data.xlsx", method="curl", quiet=T)
+    dat <- read.xlsx("data.xlsx", 1, rowIndex = 18:23, colIndex = 7:15)
+}
+
+restaurants <- function() {
+    library(XML)
+    download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Frestaurants.xml", "data.xml", method="curl", quiet=T)
+    doc <- xmlTreeParse("data.xml", useInternalNodes=T)
+    m <- xpathSApply(doc, "//zipcode[text()='21231']", xmlValue)
+    length(m)
+}
+
+realEstateIdaho2 <- function() {
+    library(data.table)
+    #download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06pid.csv", "data2.csv", method="curl", quiet=T)
+    DT <- fread("data2.csv")
+
+    # Calculate the mean in different ways
+    print(system.time(res <- tapply(DT$pwgtp15,DT$SEX,mean))) # about same elapsed time as sapply but bigger user time
+    print(res)
+    print(system.time(res <- DT[,mean(pwgtp15),by=SEX])) # fastest
+    print(res)
+    print(system.time({res1 <- mean(DT[DT$SEX==1,]$pwgtp15); res2 <- mean(DT[DT$SEX==2,]$pwgtp15)})) # slowest
+    print(c(res1, res2))
+    print(system.time(res <- sapply(split(DT$pwgtp15,DT$SEX),mean)))
+    print(res)
+}
