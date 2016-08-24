@@ -13,7 +13,7 @@
 #==============================================================================
 # Assignment 2.1
 #==============================================================================
-# monthMean("/home/arvindpdmn/Downloads/q1.csv", c("Ozone", "Solar.R", "Wind"))
+# monthMean("q2.1/data.csv", c("Ozone", "Solar.R", "Wind"))
 monthMean <- function(datafile, fields) {
     data <- read.csv(datafile)
     sapply(split(data, data$Month), function(x) colMeans(x[, fields], na.rm = TRUE))
@@ -23,7 +23,7 @@ monthMean <- function(datafile, fields) {
 #==============================================================================
 # Assignment 2.2
 #==============================================================================
-# pollutantmean("/home/arvindpdmn/Downloads/q2", "sulfate", c(1,2,20))
+# pollutantmean("q2.1", "sulfate", c(1,2,20))
 pollutantmean <- function(directory, pollutant, id = 1:332) {
     csvfiles <- dir(directory, "*\\.csv$", full.names = TRUE)
     data <- lapply(csvfiles[id], read.csv)
@@ -98,12 +98,12 @@ processNum <- function(num) {
 }
 
 mortalityRates <- function() {
-    d <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
+    d <- read.csv("q2.3/outcome-of-care-measures.csv", colClasses = "character")
     hist(as.numeric(d[,11]))
 }
 
 bestHospitalForMortality <- function(state, outcome) {
-    d <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
+    d <- read.csv("q2.3/outcome-of-care-measures.csv", colClasses = "character")
     
     stateFilter <- d$State == state
     if (!any(stateFilter)) {
@@ -124,7 +124,7 @@ bestHospitalForMortality <- function(state, outcome) {
 }
 
 rankHospitalsForMortality <- function(state, outcome, num = "best") {
-    d <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
+    d <- read.csv("q2.3/outcome-of-care-measures.csv", colClasses = "character")
     
     stateFilter <- d$State == state
     if (!any(stateFilter)) {
@@ -164,7 +164,7 @@ rankHospitalsForMortality <- function(state, outcome, num = "best") {
 }
 
 rankSummaryForMortality <- function(outcome, num = "best") {
-    d <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
+    d <- read.csv("q2.3/outcome-of-care-measures.csv", colClasses = "character")
     
     patt <- paste("^Hospital.*30\\.Day.*Mortality\\.\\.Rates.*", gsub(" ", ".", outcome), sep="")
     colFilter <- grep(patt, colnames(d), ignore.case = TRUE)
@@ -203,33 +203,41 @@ rankSummaryForMortality <- function(outcome, num = "best") {
 #==============================================================================
 # Assignment 3.1
 #==============================================================================
-realEstateIdaho1 <- function() {
+realEstateIdaho1Data <- function() {
     # Read directly if we don't want to save the file
     # d<- read.csv("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06hid.csv")
-    download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06hid.csv", "data.csv", method="curl", quiet=T)
-    d <- read.csv("data.csv")
+    if (!file.exists("q3.1/data.csv"))
+        download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06hid.csv", "q3.1/data.csv", method="curl", quiet=T)
+    d <- read.csv("q3.1/data.csv")
+}
+
+realEstateIdaho1 <- function() {
+    d <- realEstateIdaho1Data()
     highValue <- d$VAL>=24 # from code book, 24 => property value >= $1,000,000
     cat(table(highValue)[2]) # take only the count for TRUE
 }
 
 naturalGas <- function() {
     library(xlsx)
-    download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FDATA.gov_NGAP.xlsx", "data.xlsx", method="curl", quiet=T)
-    dat <- read.xlsx("data.xlsx", 1, rowIndex = 18:23, colIndex = 7:15)
+    if (!file.exists("q3.1/data.xlsx"))
+        download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FDATA.gov_NGAP.xlsx", "q3.1/data.xlsx", method="curl", quiet=T)
+    dat <- read.xlsx("q3.1/data.xlsx", 1, rowIndex = 18:23, colIndex = 7:15)
 }
 
 restaurants <- function() {
     library(XML)
-    download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Frestaurants.xml", "data.xml", method="curl", quiet=T)
-    doc <- xmlTreeParse("data.xml", useInternalNodes=T)
+    if (!file.exists("q3.1/data.xml"))
+        download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Frestaurants.xml", "q3.1/data.xml", method="curl", quiet=T)
+    doc <- xmlTreeParse("q3.1/data.xml", useInternalNodes=T)
     m <- xpathSApply(doc, "//zipcode[text()='21231']", xmlValue)
     length(m)
 }
 
 realEstateIdaho2 <- function() {
     library(data.table)
-    #download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06pid.csv", "data2.csv", method="curl", quiet=T)
-    DT <- fread("data2.csv")
+    if (!file.exists("q3.1/data2.csv"))
+        download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06pid.csv", "q3.1/data2.csv", method="curl", quiet=T)
+    DT <- fread("q3.1/data2.csv")
 
     # Calculate the mean in different ways
     print(system.time(res <- tapply(DT$pwgtp15,DT$SEX,mean))) # about same elapsed time as sapply but bigger user time
@@ -240,4 +248,164 @@ realEstateIdaho2 <- function() {
     print(c(res1, res2))
     print(system.time(res <- sapply(split(DT$pwgtp15,DT$SEX),mean)))
     print(res)
+}
+
+
+#==============================================================================
+# Assignment 3.2
+#==============================================================================
+charCount <- function() {
+    con <- url("http://biostat.jhsph.edu/~jleek/contact.html") # won't work for HTTPS
+    d <- readLines(con)
+    close(con)
+    cat(sapply(content[c(10,20,30,100)], nchar))
+}
+
+sumFourthRow <- function() {
+    if (!file.exists("q3.2/data.for"))
+        download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fwksst8110.for", "q3.2/data.for", method="curl", quiet=T)
+    d <- read.table("q3.2/data.for", skip = 3)
+
+    # exploration
+    apply(d[,2:ncol(d)], 1, sum, na.rm=T) # row-wise summation
+    sum(d[4,2:ncol(d)], na.rm=T) # sum of only 4th row
+
+    # answer to the question
+    sum(d[,6]) # sum 4th of 9 columns, which is stored in 6th column of 13 columns
+}
+
+
+#==============================================================================
+# Assignment 3.3
+#==============================================================================
+realEstateIdaho3 <- function() {
+    d <- realEstateIdaho1Data()
+    agricultureLogical <- d$ACR==3 & d$AGS==6
+    which(agricultureLogical)
+}
+
+imageAnalysis <- function() {
+    library(jpeg)
+    if (!file.exists("q3.3/data.jpg"))
+        download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fjeff.jpg", "q3.3/data.jpg", method="curl", quiet=T)
+    d <- readJPEG("q3.3/data.jpg", native=T)
+    quantile(d, prob = c(0.30,0.80))
+}
+
+gdpEduDS <- function() {
+    if (!file.exists("q3.3/gdp.csv"))
+        download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FGDP.csv", "q3.3/gdp.csv", method="curl", quiet=T)
+    gdp <- read.csv("q3.3/gdp.csv", header=F, colClasses = "character", skip = 5)
+    gdp <- gdp[complete.cases(as.numeric(gdp$V2)),c("V1","V2","V4","V5")]
+    
+    if (!file.exists("q3.3/edu.csv"))
+        download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FEDSTATS_Country.csv", "q3.3/edu.csv", method="curl", quiet=T)
+    edu <- read.csv("q3.3/edu.csv", colClasses = "character")
+    
+    a <- merge(gdp, edu, by.x="V1", by.y="CountryCode")
+    a[,"V2"] <- as.numeric(a[,"V2"])
+    a[,"V5"] <- as.numeric(gsub("[^0-9]", "", a[,"V5"]))
+
+    return(a)
+}
+
+gdpAndEdu <- function() {
+    a <- gdpEduDS()
+
+    # Descending order of ranking and show 13th country
+    s <- a[order(-a$V2),]
+    s[13,"Short.Name"]
+
+    # Mean of ranking by income group
+    tapply(a$V2, a$Income.Group, mean)
+
+    # Analysis of ranking vs income groups
+    q  <- quantile(a$V2, probs = seq(0,1,0.2)) # four quantile points => five groups
+    groups <- cut(a$V2, breaks=q)
+    table(groups, a$Income.Group)
+}
+
+
+#==============================================================================
+# Assignment 3.4
+#==============================================================================
+realEstateIdaho4 <- function() {
+    d <- realEstateIdaho1Data()
+    strsplit(names(d), "wgtp")
+}
+
+gdpAnalysis <- function() {
+    a <- gdpEduDS()
+
+    mean(a[,"V5"])
+
+    grep("^United", a$V4, value = TRUE)
+
+    length(grep("Fiscal +year +end.*June", a[,"Special.Notes"]))
+}
+
+stockPrices <- function() {
+    library(quantmod)
+    amzn = getSymbols("AMZN",auto.assign=FALSE)
+    sampleTimes = index(amzn)
+
+    length(sampleTimes[sapply(sampleTimes, format, "%Y")=="2012"])
+    length(sampleTimes[sapply(sampleTimes, format, "%a%Y")=="Mon2012"])
+}
+
+
+#==============================================================================
+# Assignment 3.5
+#==============================================================================
+readAccGyroDataSet <- function(type, labelnames, featurenames) {
+    # Main table will be as follows:
+    #   subjectid, {accx}, {accy}, {accz}, {gyrox}, {gyroy}, {gyroz}, {totalx}, {totaly}, {totalz}, label, {features}
+    # {accx} component has 128 acceleration measurements; likewise, for y and z.
+    # {gyrox} component has 128 gyroscope measurements; likewise, for y and z.
+    # {totalx} component has 128 total measurements; likewise, for y and z.
+    # {features} component will have 561 columns
+
+    subjects <- fread(paste0("q3.4/", type, "/subject_", type, ".txt"))
+    
+    x <- fread(paste0("q3.4/", type, "/Inertial Signals/body_acc_x_", type, ".txt"))
+    y <- fread(paste0("q3.4/", type, "/Inertial Signals/body_acc_y_", type, ".txt"))
+    z <- fread(paste0("q3.4/", type, "/Inertial Signals/body_acc_z_", type, ".txt"))
+    bodyacc <- data.table(x=x, y=y, z=z)
+    
+    x <- fread(paste0("q3.4/", type, "/Inertial Signals/body_gyro_x_", type, ".txt"))
+    y <- fread(paste0("q3.4/", type, "/Inertial Signals/body_gyro_y_", type, ".txt"))
+    z <- fread(paste0("q3.4/", type, "/Inertial Signals/body_gyro_z_", type, ".txt"))
+    bodygyro <- data.table(x=x, y=y, z=z)
+    
+    x <- fread(paste0("q3.4/", type, "/Inertial Signals/total_acc_x_", type, ".txt"))
+    y <- fread(paste0("q3.4/", type, "/Inertial Signals/total_acc_y_", type, ".txt"))
+    z <- fread(paste0("q3.4/", type, "/Inertial Signals/total_acc_z_", type, ".txt"))
+    totalacc <- data.table(x=x, y=y, z=z)
+    
+    label <- fread(paste0("q3.4/", type, "/y_", type, ".txt"))
+    namedlabel <- factor(label[,V1], levels=labelnames$V1, labels=labelnames$V2)
+    features <- fread(paste0("q3.4/", type, "/X_", type, ".txt"))
+    colnames(features) <- featurenames
+    
+    all <- cbind(subjectid=subjects[,V1], bodyacc=bodyacc, bodygyro=bodygyro, totalacc=totalacc, namedlabel=namedlabel, features=features)
+}
+
+accGyroAnalysis <- function() {
+    labelnames <- fread("q3.4/activity_labels.txt")
+    featurenames <- fread("q3.4/features.txt")
+    featurenames <- gsub("[()]", "", featurenames[,V2])
+    featurenames <- gsub("[-,]", ".", featurenames)
+
+    # Get the entire data into a single data table    
+    traindata <- readAccGyroDataSet("train", labelnames, featurenames)
+    testdata <- readAccGyroDataSet("test", labelnames, featurenames)
+    all <- rbind(traindata, testdata)
+
+    # Do the analysis of main features
+    mainfeatures <- grep("^features\\.t.*(mean|std)\\.[XYZ]$", names(all), value = TRUE)
+    maincols <- append(c("subjectid","namedlabel"), mainfeatures)
+    main <- all[, maincols, with=F]
+    #means <- main[, lapply(.SD, mean), by=.(subjectid,namedlabel)]
+    #sortedmeans <- means[, .SD, keyby=.(subjectid,namedlabel)]
+    sortedmeans <- main[, lapply(.SD, mean), by=.(subjectid,namedlabel)][order(subjectid,namedlabel)] # use of chaining
 }

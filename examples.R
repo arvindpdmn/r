@@ -1,7 +1,133 @@
+dplyrExamples <- function() {
+    library(dplyr)
+    
+    df <- data.frame(ID = c("b","b","b","b","a","a","c"), A = 1:7, B = 7:13, C = 14:20)
+    df[,match("ID", colnames(df)):match("B", colnames(df))] # a range of cols by name
+    select(df, ID:B) # lot easier with dplyr
+    select(df, -(ID:B))
+    filter(df, A>3 & B<12)
+    arrange(df, ID)
+    arrange(df, ID, desc(C)) # ID ascending, C descending
+    df <- rename(df, AA=A, CC=C) # rename columns
+    df <- mutate(df, Adev = AA - mean(AA, na.rm=T)) # add a column
+    df <- mutate(df, oe = factor(df$B%%2, labels=c("ODD", "EVEN"))) # category labelling
+    oddeven <- group_by(df, oe)
+    summarize(oddeven, AAm=mean(AA, na.rm=T), Bm=median(B, na.rm=T))
+    df <- mutate(df, date = c("2015-05-11", "2016-05-11", "2012-05-11", "2012-04-11", "2013-05-11", "2013-04-11", "2014-05-11"))
+    df <- mutate(df, year = as.POSIXlt(date)$year + 1900)
+    summarize(group_by(df, year), AAm=mean(AA, na.rm=T), Bm=median(B, na.rm=T))
+    df <- df[, !names(df)=="year"] # drop year column
+    df %>% mutate(year = as.POSIXlt(date)$year + 1900) %>% group_by(year) %>% summarize(AAm=mean(AA, na.rm=T), Bm=median(B, na.rm=T)) # pipelining operations
+    
+    a <- data.frame(id=sample(1:10), x=rnorm(10))
+    b <- data.frame(id=sample(1:10), y=rnorm(10))
+    c <- data.frame(id=sample(1:10), z=rnorm(10))
+    arrange(join(a,b), id) # join two datasets by common names
+    join_all(list(a,b,c)) # join more than two datasets
+}
+
+textExamples <- function() {
+    n <- c("lat.long", "height.weight", "bmi", "name")
+    strsplit(n, ".", fixed=T)
+    strsplit(n, "\\.")
+    sapply(strsplit(n, "\\."), function(x) x[1]) # get only first parts
+
+    grep("e", n) # indices
+    grep("e", n, values=T) # values
+    grepl("e", n) # logical vector
+    n[grepl("e", n)] # only those with e in it
+    n[!grepl("e", n)] # only those without e in it
+    table(grepl("e", n))
+    length(grep("x", n))==0 # check if something doesn't exist
+    
+    toupper(n)
+    tolower(n)
+    nchar(n) # count characters per element
+    substr(n, 1, 6) # substring with start and stop markers
+    paste(1:length(n), n, sep=".") # add a prefix
+
+    trimws("  program    ")
+    trimws("  program    ", which = "right")
+}
+
+dateExamples <- function() {
+    d <- date()
+    class(d) # character
+    
+    sd <- Sys.Date() # yyyy-mm-dd
+    class(sd) # Date
+    format(sd, "%d-%m-%Y")
+    format(sd, "%a %b %d %Y")  # Wed Aug 24 2016
+    format(sd, "%a %B %d '%y")  # Wed August 24 '16
+    weekdays(sd)
+    months(sd)
+    julian(sd) # number of days since epoch
+    
+    dates <- c("1jan2005", "21feb2013", "8OCT2014")
+    z <- as.Date(dates, "%d%b%Y")
+    z[1]-z[2] # get time difference in days
+    as.numeric(z[1]-z[2]) # get time difference
+    
+    library(lubridate)
+    ymd("20141023")
+    mdy("10/23/2014")
+    dmy("23-10-2014")
+    ymd_hms("20141023 13:15:03")
+    ymd_hms("20141023 13:15:03", tz="Asia/Kolkata")
+    wday(dmy("23-10-2014"))
+    wday(dmy("23-10-2014"),label=T)
+
+    Sys.timezone() # returns NA
+}
+
 miscExamples <- function() {
     d <- paste("V", c(1,2,3,5), c(7,8,9,4), sep="x")
     print(d)
 
+    y <- rnorm(1:10)
+    yesno <- sample(c("yes","no"), size=10, replace=T)
+    y[yesno=="yes"]
+
+    y <- rnorm(1:10)
+    seq_along(y)
+    seq(1, 20, along=y)
+    seq(1, 20, by=2)
+    seq(1, 20, length=10)
+
+    y <- rnorm(1:10)
+    ifelse(y<0, "Neg", "Pos")
+    groups <- cut(y, breaks=quantile(y)) # groups is a factor variable
+    table(groups)
+    table(groups, y) # shows which values fall into which groups
+    
+    set.seed(45)
+    d <- data.frame(a=1:5, b=6:10, c=11:15)
+    d <- d[sample(1:5),] # rearrange rows
+    d$b[c(1,3)] <- NA # set couple of elements to NA
+    sum(is.na(d$b)) # count of NA values
+    any(is.na(d$b))
+    all(is.na(d$b))
+    colSums(is.na(d))
+    rowSums(is.na(d))
+    table(d$a %in% c(4,2)) # count of TRUE/FALSE from this condition
+    table(d$a == 2) # == works for a single value
+    d[d$a %in% c(4,2),] # use logical vector to subset
+    table(d$b, useNA="ifany") # count NA occurences as well
+    table(d$a, d$b) # count combination of a and b
+    d[(d$a>3 | d$c>6),] # subset by conditions: condition returns logical vector
+    d[(d$a>3 & d$c>6),]
+    d[which(d$b>6),] # need to use which() when some values are NA: which() returns indices
+    sort(d$b, na.last=T) # NA values are retained and come at the end
+    d[order(-d$c),] # descending order by column c values
+    d$d <- 16:20 # add a new column at the end
+    d <- cbind(d, e=21:25) # alternative to add a new column
+    print(d)
+
+    a <- data.frame(id=1:5, bid=3:7, value=rnorm(5))
+    b <- data.frame(id=3:7, value=rnorm(5), err=rnorm(5))
+    merge(a, b, by.x="bid", by.y="id", all=T) # merge from multiple datasets
+    intersect(names(a), names(b))
+    
 }
 
 dataTableExamples <- function() {
