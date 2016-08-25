@@ -409,3 +409,51 @@ accGyroAnalysis <- function() {
     #sortedmeans <- means[, .SD, keyby=.(subjectid,namedlabel)]
     sortedmeans <- main[, lapply(.SD, mean), by=.(subjectid,namedlabel)][order(subjectid,namedlabel)] # use of chaining
 }
+
+
+#==============================================================================
+# Assignment 4.1
+#==============================================================================
+powerConsumption <- function() {
+    # One possible implementation but it's too slow
+    # Incomplete: we are not saving the matched lines
+    # con <- file("q4.1/household_power_consumption.txt", open="r")
+    # header <- readLines(con, n=1, warn=F)
+    # cols <- strsplit(header, ";")[[1]]
+    # line <- readLines(con, n=1, warn=F)
+    # i <- 0
+    # while (length(line)>0) {
+    #     if (length(grep("^[12]/02/2007", line))) i <- i + 1
+    #     line <- readLines(con, n=1, warn=F)
+    # }
+    # close(con)
+    # print(c("No. of records:", i))
+        
+    library(sqldf)
+    d <- read.csv.sql("q4.1/household_power_consumption.txt", sql = "SELECT * FROM file WHERE Date='1/2/2007' OR Date='2/2/2007'", sep = ";", eol = "\n")
+    dt <- strptime(paste(d$Date, d$Time), "%d/%m/%Y %H:%M:%S")
+    
+    hist(d$Global_active_power, col="red", xlab="Global Active Power (kilowatts)", main="Global Active Power")
+
+    plot(dt, d$Global_active_power, type="l", xlab = "", ylab = "Global Active Power (kilowatts)")
+
+    plot(dt, d$Sub_metering_1, type="l", col="black", xlab="", ylab="Energy sub metering")
+    lines(dt, d$Sub_metering_2, type="l", col="red")
+    lines(dt, d$Sub_metering_3, type="l", col="purple")
+    legend("topright", lty=1,  col=c("black","purple","red"), legend=c("Sub_metering_1","Sub_metering_2","Sub_metering_3"))
+
+    par(mfrow=c(2,2), mar=c(4,4,2,1), oma=c(0,0,2,0))
+    with (d, {
+        plot(dt, d$Global_active_power, type="l", xlab = "", ylab = "Global Active Power")
+
+        plot(dt, d$Voltage, type="l", xlab = "datetime", ylab = "Voltage")
+        
+        plot(dt, d$Sub_metering_1, type="l", col="black", xlab="", ylab="Energy sub metering")
+        lines(dt, d$Sub_metering_2, type="l", col="red")
+        lines(dt, d$Sub_metering_3, type="l", col="purple")
+        legend("topright", lty=1,  col=c("black","purple","red"), legend=c("Sub_metering_1","Sub_metering_2","Sub_metering_3"))
+        
+        plot(dt, d$Global_reactive_power, type="l", xlab = "datetime", ylab = "Global_reactive_power")
+    })
+    par(mfrow=c(1,1), mar=c(4,4,2,1), oma=c(0,0,2,0))
+}

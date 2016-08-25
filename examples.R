@@ -23,6 +23,9 @@ baseplotExamples <- function() {
     boxplot(Ozone ~ Month, airquality, xlab="Month", ylab="Ozone (ppb)")
     title(main = "Monthly Ozone Levels")
 
+    # a line graph
+    plot(seq(1,1000,length.out=100), rnorm(100), type="l", col="wheat", lwd=2)
+    
     d <- sample(c("Yes", "No"), 100, replace=T)
     barplot(table(d))
     
