@@ -1,3 +1,66 @@
+baseplotExamples <- function() {
+    par("bg")
+    par("lty")
+    par("pch")
+    par("bg", "lty", "pch")
+    par("mar") # bottom, left, top, right margins
+    
+    plot(rnorm(100), rnorm(100), xlab="x", ylab="y")
+
+    hist(airquality$Ozone)
+    hist(airquality$Ozone, breaks=20)
+    abline(v=median(airquality$Ozone, na.rm=T), col="purple", lwd=4)
+    rug(airquality$Ozone)
+
+    par(bg="wheat")
+    plot(airquality$Ozone, airquality$Wind)
+    par(bg="white")
+
+    boxplot(Ozone ~ Month, airquality)
+    abline(h=100, lty="dashed", col="red")
+
+    airquality <- transform(airquality, Month = factor(Month))
+    boxplot(Ozone ~ Month, airquality, xlab="Month", ylab="Ozone (ppb)")
+    title(main = "Monthly Ozone Levels")
+
+    d <- sample(c("Yes", "No"), 100, replace=T)
+    barplot(table(d))
+    
+    # title set via plot(), plot the points separately, add legend
+    with(airquality, plot(Wind, Ozone, main = "Ozone & Wind", type = "n"))
+    with(subset(airquality,Month==5), points(Wind, Ozone, col="blue"))
+    with(subset(airquality,Month!=5), points(Wind, Ozone, col="red"))
+    legend("topright", pch=1,  col=c("blue","red"), legend=c("May","Other Months"))
+
+    # alternative way of subsetting
+    with(airquality, plot(Wind, Ozone, main = "Ozone & Wind", type = "n"))
+    with(airquality[airquality$Month==5,], points(Wind, Ozone, col="blue"))
+    with(airquality[airquality$Month!=5,], points(Wind, Ozone, col="red"))
+    legend("topright", pch=1,  col=c("blue","red"), legend=c("May","Other Months"))
+    
+    model <- lm(Ozone ~ Wind, airquality)
+    abline(model, lty="dotted", lwd=2)
+    
+    par(mfrow=c(1,3), mar=c(4,4,2,1), oma=c(0,0,2,0))
+    with (airquality, {
+        plot(Wind, Ozone, main = "Ozone and Wind")
+        plot(Solar.R, Ozone, main = "Ozone and Solar Radiation")
+        plot(Temp, Ozone, main = "Ozone and Temperature")
+        mtext("Ozone and Weather in NY City", outer=T)
+    })
+    par(mfrow=c(1,1), mar=c(4,4,2,1), oma=c(0,0,2,0))
+
+    # plot to a file
+    pdf(file = "sampleplot.pdf")
+    plot(rnorm(100), rnorm(100), xlab="x", ylab="y")
+    dev.off()
+
+    # plot to screen and then save
+    plot(rnorm(100), rnorm(100), xlab="X", ylab="Y")
+    dev.copy(png, file = "sampleplot.png")
+    dev.off()
+}
+
 dplyrExamples <- function() {
     library(dplyr)
     
