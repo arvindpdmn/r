@@ -415,6 +415,8 @@ accGyroAnalysis <- function() {
 # Assignment 4.1
 #==============================================================================
 powerConsumption <- function() {
+    # Since data is huge, read in only what's relevant
+    
     # One possible implementation but it's too slow
     # Incomplete: we are not saving the matched lines
     # con <- file("q4.1/household_power_consumption.txt", open="r")
@@ -428,20 +430,31 @@ powerConsumption <- function() {
     # }
     # close(con)
     # print(c("No. of records:", i))
-        
-    library(sqldf)
-    d <- read.csv.sql("q4.1/household_power_consumption.txt", sql = "SELECT * FROM file WHERE Date='1/2/2007' OR Date='2/2/2007'", sep = ";", eol = "\n")
+
+    # One possible method: fastest method
+    con <- file("q4.1/household_power_consumption.txt", open="r")
+    header <- readLines(con, n=1, warn=F)
+    d <- read.csv(pipe("grep -E '^[12]/2/2007' q4.1/household_power_consumption.txt"), header=F, sep=";")
+    colnames(d) <- strsplit(header, ";")[[1]]
+    
+    # Another possible method
+    #library(sqldf)
+    #d <- read.csv.sql("q4.1/household_power_consumption.txt", sql = "SELECT * FROM file WHERE Date='1/2/2007' OR Date='2/2/2007'", sep = ";", eol = "\n")
+
     dt <- strptime(paste(d$Date, d$Time), "%d/%m/%Y %H:%M:%S")
     
     hist(d$Global_active_power, col="red", xlab="Global Active Power (kilowatts)", main="Global Active Power")
-
+    cat("Enter to continue ..."); readline()
+    
     plot(dt, d$Global_active_power, type="l", xlab = "", ylab = "Global Active Power (kilowatts)")
-
+    cat("Enter to continue ..."); readline()
+    
     plot(dt, d$Sub_metering_1, type="l", col="black", xlab="", ylab="Energy sub metering")
     lines(dt, d$Sub_metering_2, type="l", col="red")
     lines(dt, d$Sub_metering_3, type="l", col="purple")
     legend("topright", lty=1,  col=c("black","purple","red"), legend=c("Sub_metering_1","Sub_metering_2","Sub_metering_3"))
-
+    cat("Enter to continue ..."); readline()
+    
     par(mfrow=c(2,2), mar=c(4,4,2,1), oma=c(0,0,2,0))
     with (d, {
         plot(dt, d$Global_active_power, type="l", xlab = "", ylab = "Global Active Power")
