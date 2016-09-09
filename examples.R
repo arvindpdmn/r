@@ -1,3 +1,58 @@
+ggplotExamples <- function() {
+    library(ggplot2)
+    library(datasets)
+    
+    qplot(displ, hwy, data=mpg)
+    qplot(displ, hwy, data=mpg, shape=drv)
+    qplot(displ, hwy, data=mpg, col=drv)
+    
+    qplot(displ, hwy, data=mpg, geom=c("point","smooth")) # gray area is 95% confidence interval
+    qplot(displ, hwy, data=mpg, col=drv, geom=c("point","smooth"))
+    
+    # histogram from a single variable
+    qplot(hwy, data=mpg)
+    qplot(hwy, data=mpg, fill=drv)
+    qplot(log(hwy), data=mpg, bins=10)
+    qplot(log(hwy), data=mpg, geom="density")
+    qplot(log(hwy), data=mpg, geom="density", col=drv) # separating the peaks
+    
+    # facets are like panels of lattice plots
+    qplot(displ, hwy, data=mpg, facets=.~drv)
+    qplot(hwy, data=mpg, facets=drv~., binwidth=2)
+
+    # combine two calls
+    qplot(displ, hwy, data=mpg, col=drv) + geom_smooth(method="lm")
+    qplot(displ, hwy, data=mpg, facets=.~drv) + geom_smooth(method="lm")
+    
+}
+
+latticeplotExamples <- function() {
+    library(lattice)
+    library(datasets)
+    
+    xyplot(Ozone ~ Wind, data = airquality)
+
+    airquality <- transform(airquality, Month = factor(Month))
+    xyplot(Ozone ~ Wind | Month, data = airquality, layout=c(5,1))
+
+    p <- xyplot(Ozone ~ Wind | Month, data = airquality, layout=c(5,1))
+    print(p) # do manual printing    
+
+    x <- rnorm(100)
+    f <- rep(0:1, each=50)
+    y <- x + f - f * x + rnorm(100, sd=0.5)
+    f <- factor(f, labels=c("Group 1","Group 2"))
+    xyplot(y ~ x | f, layout=c(2,1)) # two panels are produced
+
+    # Custom panel function
+    xyplot(y ~ x | f, panel = function(x, y, ...) {
+        panel.xyplot(x, y, ...) # use default panel function
+        panel.abline(h=median(y), lty=2) # customize
+        panel.lmline(x, y, col="red") # customize
+    })
+    
+}
+
 baseplotExamples <- function() {
     par("bg")
     par("lty")
@@ -147,6 +202,11 @@ dateExamples <- function() {
 }
 
 miscExamples <- function() {
+    rep(0:1) # 0 1
+    rep(0:1, times=5) # 0 1 0 1 0 1 0 1 0 1
+    rep(0:1, length.out=5) # 0 1 0 1 0
+    rep(0:1, each=5) # 0 0 0 0 0 1 1 1 1 1
+    
     d <- paste("V", c(1,2,3,5), c(7,8,9,4), sep="x")
     print(d)
 
