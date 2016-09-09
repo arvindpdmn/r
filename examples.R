@@ -1,3 +1,98 @@
+mycolors <- function() {
+    cc <- colorRamp(c("red","blue"))
+    cc(0) # only red
+    cc(1) # only blue
+    cc(0.5) # equal mix of red and blue
+    cc(seq(0, 1, len=10)) # 10 different colours varying from red to blue
+
+    cc <- colorRampPalette(c("red","yellow"))
+    cc(2) # returns 2 colours in hex: just red and yellow
+    cc(10) # interpolation between red and yellow
+    
+    library(RColorBrewer)
+    cols <- brewer.pal(3, "BuGn")
+    pal <- colorRampPalette(cols)
+    par(mfrow = c(1,2))
+    image(volcano, col=pal(20))
+    image(volcano) # default
+    
+    # Lots of points: smoothScatter plots the histogram
+    x <- rnorm(10000)
+    y <- rnorm(10000)
+    par(mfrow = c(1,2))
+    smoothScatter(x, y)
+    smoothScatter(x, y, colramp = pal)
+    
+    rgb(1, 0, 0) # FF0000
+    rgb(.1, 0, 0) # 1A0000: 1A = 16+10 = 26 ~ 10% of 255
+    rgb(1, 0, 0, .1) # add transparency
+    par(mfrow = c(1,2))
+    plot(x, y, pch=19)
+    plot(x, y, col=rgb(1, 0, 0, .1), pch=19) # use transparency to convey density of points
+}
+
+dimensionReduction <- function() {
+    # create random data
+    set.seed(12345)
+    d <- matrix(rnorm(400), nrow=40)
+    image(1:10, 1:40, t(d)[, nrow(d):1]) # no pattern here
+
+    # simulate a pattern within the data
+    set.seed(678910)
+    for (i in 1:40) {
+        coinFlip <- rbinom(1, size=1, prob=0.5)
+        if (coinFlip) {
+            d[i,] <- d[i,] + rep(c(0,3), each=5)
+        }
+    }
+    image(1:10, 1:40, t(d)[, nrow(d):1]) # pattern visible on columns
+    heatmap(d)
+    clusters <- hclust(dist(d))
+    dOrdered <- d[clusters$order, ]
+    par(mfrow = c(1,3))
+    image(1:10, 1:40, t(dOrdered)[, nrow(dOrdered):1])
+    plot(rowMeans(dOrdered), 40:1, xlab="Row Mean", ylab="Row")
+    plot(colMeans(dOrdered), xlab="Column", ylab="Column Mean")
+    
+    # Singular Value Decomposition
+    s <- svd(scale(dOrdered))
+    par(mfrow = c(1,3))
+    image(1:10, 1:40, t(dOrdered)[, nrow(dOrdered):1])
+    plot(s$u[, 1], 40:1, xlab="Row", ylab="First left singular vector")
+    plot(s$v[, 1], xlab="Column", ylab="First right singular vector")
+    par(mfrow = c(1,2))
+    plot(s$d, xlab="Column", ylab="Singular value")
+    plot(s$d^2/sum(s$d^2), xlab="Column", ylab="Proportion of variance explained")
+
+    # SVD and Principal Component Analysis (PCA) are equivalent
+    p <- prcomp(dOrdered, scale=T)
+    plot(p$rotation[, 1], s$v[, 1], xlab="Principal component 1", ylab="Right singular value 1")
+    plot(p$rotation[, 2], s$v[, 2], xlab="Principal component 2", ylab="Right singular value 2")
+}
+
+clustering <- function() {
+    # hierarchical
+    set.seed(1234)
+    par(mar = c(1,1,1,1))
+    x <- rnorm(12, mean = rep(1:3, each=4), sd = 0.2) # each value taken from a dist with its own mean
+    y <- rnorm(12, mean = rep(c(1,2,1), each=4), sd = 0.2)
+    plot(x, y, col="blue", pch=19, cex=2)
+    text(x+0.05, y+0.05, labels=as.character(1:12))
+    d <- data.frame(x, y)
+    distances <- dist(d)
+    hClusters <- hclust(distances)
+    plot(hClusters)
+    heatmap(data.matrix(d))
+    
+    # kmeans
+    k <- kmeans(d, centers=3)
+    plot(x, y, col=k$cluster, pch=19, cex=2)
+    points(k$centers, col=1:3, pch=3, cex=3, lwd=3) # plot cluster centers
+    image(t(d)[, nrow(d):1], yaxt="n") # heatmap in original order
+    image(t(d)[, order(k$cluster)], yaxt="n") # heatmap ordered by cluster
+    par(mfrow = c(1,2))
+}
+
 ggplotExamples <- function() {
     library(ggplot2)
     library(datasets)
@@ -20,10 +115,46 @@ ggplotExamples <- function() {
     qplot(displ, hwy, data=mpg, facets=.~drv)
     qplot(hwy, data=mpg, facets=drv~., binwidth=2)
 
+    # use transform
+    airquality = transform(airquality, Month = factor(Month))
+    qplot(Wind, Ozone, data = airquality, facets = . ~ Month)
+    
     # combine two calls
     qplot(displ, hwy, data=mpg, col=drv) + geom_smooth(method="lm")
     qplot(displ, hwy, data=mpg, facets=.~drv) + geom_smooth(method="lm")
     
+    # using the basic ggplot
+    g <- ggplot(mpg, aes(displ, hwy))
+    print(g) # plot will be blank
+    p <- g + geom_point()
+    print(p) # scatterplot comes up
+    g + geom_point() # as above but autoprinted to screen
+    g + geom_point() + geom_smooth() # could be affected by noise (where too few data points are available)
+    g + geom_point() + geom_smooth(method="lm") # linear regression
+    g + geom_point() + facet_grid(. ~ drv) + geom_smooth(method="lm") # columns of drv
+    g + geom_point() + facet_grid(drv ~ .) + geom_smooth(method="lm") # rows of drv
+    g + geom_point(color="steelblue", size=.5, alpha=.8) # color is constant
+    g + geom_point(aes(color=drv), size=2, alpha=.8) # color is wrapped in aes: linked to value of a data variable
+    g + geom_point(aes(color="steelblue"), size=2, alpha=.8) # wrong usage: only one colour with legend of one value "steelblue"
+    g + geom_point() + labs(title="xy", x="xxx", y="yyy") # title and axis labels
+    g + geom_point() + labs(title="xy", x=expression("X "*YZ[abc]), y="yyy") # subscript in label
+    g + geom_point() + geom_smooth(size=2, linetype=3, method="lm", se=F)
+    g + geom_point() + geom_smooth(size=.8, linetype=2, method="lm", se=F)
+    g + geom_point() + theme_bw()
+    g + geom_point() + theme_bw(base_family = "Verdana") # change font
+    g + geom_point() + ylim(0,50) # ensures y-axis starts from zero
+    g + geom_line() + ylim(10,40) # points out of range will be ignored
+    g + geom_line() + coord_cartesian(ylim = c(10,40)) # points out of range will be considered but outside plot boundaries
+
+    g + geom_point() + facet_grid(. ~ cty) # cannot do useful conditioning on a variable with many values or on continuous variables
+    bins <- quantile(mpg$cty, seq(0,1,length=4), na.rm=T)
+    mpg$bins <- cut(mpg$cty, bins)
+    g <- ggplot(mpg, aes(displ, hwy)) # need to reconstruct
+    g + geom_point() + facet_grid(. ~ bins) # this will show an NA group
+    bins["0%"] <- bins["0%"]-1 # to remove NA group
+    mpg$bins <- cut(mpg$cty, bins)
+    g <- ggplot(mpg, aes(displ, hwy)) # need to reconstruct
+    g + geom_point() + facet_grid(. ~ bins)
 }
 
 latticeplotExamples <- function() {

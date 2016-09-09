@@ -412,6 +412,32 @@ accGyroAnalysis <- function() {
 
 
 #==============================================================================
+# Module 4
+#==============================================================================
+plotJpeg <- function(path, add=FALSE) {
+    require('jpeg')
+    jpg = readJPEG(path, native=T) # read the file
+    res = dim(jpg)[1:2] # get the resolution
+    if (!add) # initialize an empty plot area if add==FALSE
+        plot(1,1,xlim=c(1,res[1]),ylim=c(1,res[2]),asp=1,type='n',xaxs='i',yaxs='i',xaxt='n',yaxt='n',xlab='',ylab='',bty='n')
+    rasterImage(jpg,1,1,res[1],res[2])
+    return(jpg)
+}
+
+componentAnalysis <- function() {
+    d <- plotJpeg("m4/obama.jpg")
+    par(mfrow = c(2,2))
+    plot(s$d^2/sum(s$d^2), xlab="Singular vector", ylab="Variance explained", main="Component analysis")
+    approx <- s$u[, 1:5] %*% diag(s$d[1:5]) %*% t(s$v[, 1:5])
+    image(approx[, nrow(approx):1], main="5 components")
+    approx <- s$u[, 1:10] %*% diag(s$d[1:10]) %*% t(s$v[, 1:10])
+    image(approx[, nrow(approx):1], main="10 components")
+    approx <- s$u[, 1:20] %*% diag(s$d[1:20]) %*% t(s$v[, 1:20])
+    image(approx[, nrow(approx):1], main="20 components")
+}
+
+
+#==============================================================================
 # Assignment 4.1
 #==============================================================================
 powerConsumption <- function() {
@@ -470,3 +496,4 @@ powerConsumption <- function() {
     })
     par(mfrow=c(1,1), mar=c(4,4,2,1), oma=c(0,0,2,0))
 }
+
