@@ -365,34 +365,34 @@ readAccGyroDataSet <- function(type, labelnames, featurenames) {
     # {totalx} component has 128 total measurements; likewise, for y and z.
     # {features} component will have 561 columns
 
-    subjects <- fread(paste0("q3.4/", type, "/subject_", type, ".txt"))
+    subjects <- fread(paste0("q3.5/", type, "/subject_", type, ".txt"))
     
-    x <- fread(paste0("q3.4/", type, "/Inertial Signals/body_acc_x_", type, ".txt"))
-    y <- fread(paste0("q3.4/", type, "/Inertial Signals/body_acc_y_", type, ".txt"))
-    z <- fread(paste0("q3.4/", type, "/Inertial Signals/body_acc_z_", type, ".txt"))
+    x <- fread(paste0("q3.5/", type, "/Inertial Signals/body_acc_x_", type, ".txt"))
+    y <- fread(paste0("q3.5/", type, "/Inertial Signals/body_acc_y_", type, ".txt"))
+    z <- fread(paste0("q3.5/", type, "/Inertial Signals/body_acc_z_", type, ".txt"))
     bodyacc <- data.table(x=x, y=y, z=z)
     
-    x <- fread(paste0("q3.4/", type, "/Inertial Signals/body_gyro_x_", type, ".txt"))
-    y <- fread(paste0("q3.4/", type, "/Inertial Signals/body_gyro_y_", type, ".txt"))
-    z <- fread(paste0("q3.4/", type, "/Inertial Signals/body_gyro_z_", type, ".txt"))
+    x <- fread(paste0("q3.5/", type, "/Inertial Signals/body_gyro_x_", type, ".txt"))
+    y <- fread(paste0("q3.5/", type, "/Inertial Signals/body_gyro_y_", type, ".txt"))
+    z <- fread(paste0("q3.5/", type, "/Inertial Signals/body_gyro_z_", type, ".txt"))
     bodygyro <- data.table(x=x, y=y, z=z)
     
-    x <- fread(paste0("q3.4/", type, "/Inertial Signals/total_acc_x_", type, ".txt"))
-    y <- fread(paste0("q3.4/", type, "/Inertial Signals/total_acc_y_", type, ".txt"))
-    z <- fread(paste0("q3.4/", type, "/Inertial Signals/total_acc_z_", type, ".txt"))
+    x <- fread(paste0("q3.5/", type, "/Inertial Signals/total_acc_x_", type, ".txt"))
+    y <- fread(paste0("q3.5/", type, "/Inertial Signals/total_acc_y_", type, ".txt"))
+    z <- fread(paste0("q3.5/", type, "/Inertial Signals/total_acc_z_", type, ".txt"))
     totalacc <- data.table(x=x, y=y, z=z)
     
-    label <- fread(paste0("q3.4/", type, "/y_", type, ".txt"))
+    label <- fread(paste0("q3.5/", type, "/y_", type, ".txt"))
     namedlabel <- factor(label[,V1], levels=labelnames$V1, labels=labelnames$V2)
-    features <- fread(paste0("q3.4/", type, "/X_", type, ".txt"))
+    features <- fread(paste0("q3.5/", type, "/X_", type, ".txt"))
     colnames(features) <- featurenames
     
     all <- cbind(subjectid=subjects[,V1], bodyacc=bodyacc, bodygyro=bodygyro, totalacc=totalacc, namedlabel=namedlabel, features=features)
 }
 
 accGyroAnalysis <- function() {
-    labelnames <- fread("q3.4/activity_labels.txt")
-    featurenames <- fread("q3.4/features.txt")
+    labelnames <- fread("q3.5/activity_labels.txt")
+    featurenames <- fread("q3.5/features.txt")
     featurenames <- gsub("[()]", "", featurenames[,V2])
     featurenames <- gsub("[-,]", ".", featurenames)
 
@@ -497,3 +497,129 @@ powerConsumption <- function() {
     par(mfrow=c(1,1), mar=c(4,4,2,1), oma=c(0,0,2,0))
 }
 
+
+#==============================================================================
+# Case Study 4.2
+#==============================================================================
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+    library(grid)
+    
+    # Make a list from the ... arguments and plotlist
+    plots <- c(list(...), plotlist)
+    
+    numPlots = length(plots)
+    
+    # If layout is NULL, then use 'cols' to determine layout
+    if (is.null(layout)) {
+        # Make the panel
+        # ncol: Number of columns of plots
+        # nrow: Number of rows needed, calculated from # of cols
+        layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                         ncol = cols, nrow = ceiling(numPlots/cols))
+    }
+    
+    if (numPlots==1) {
+        print(plots[[1]])
+        
+    } else {
+        # Set up the page
+        grid.newpage()
+        pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+        
+        # Make each plot, in the correct location
+        for (i in 1:numPlots) {
+            # Get the i,j matrix positions of the regions that contain this subplot
+            matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+            
+            print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                            layout.pos.col = matchidx$col))
+        }
+    }
+}
+
+humanActivityDetection <- function() {
+    library(data.table)
+    library(ggplot2)
+    library(dendextend)
+    
+    labelnames <- fread("q3.5/activity_labels.txt")
+    featurenames <- fread("q3.5/features.txt")
+    featurenames <- gsub("[()]", "", featurenames[,V2])
+    featurenames <- gsub("[-,]", ".", featurenames)
+    
+    traindata <- readAccGyroDataSet("train", labelnames, featurenames)
+
+    # Retain non-measured values
+    d <- data.frame(traindata[, c(1, (2+128*9):ncol(traindata)), with=F])
+    numBaseCols <- ncol(d)
+    for (i in seq(0,8)) {
+        # Retain only the mean of samples 1-128 for each measured variable
+        curr <- traindata[, c((1+128*i+1):(1+128*i+128)), with=F]
+        name <- sub("\\.V\\d+$", "", names(curr)[1], perl=T)
+        d[[name]]  <- rowMeans(curr)
+    }
+
+    s1.all <- data.frame(subset(d, subjectid == 1))
+    
+    # Use qplot but cannot control legend
+    xp <- qplot(y=bodyacc.x, data=s1, col=namedlabel) # + theme(legend.position="none")
+    yp <- qplot(y=bodyacc.y, data=s1, col=namedlabel)
+    multiplot(xp, yp, cols=2)
+
+    # Use ggplot to visualize bodyacc.x and bodyacc.y for subjectid==1
+    s1 <- melt(s1.all, id=1:numBaseCols)
+    s1 <- s1[s1$variable=="bodyacc.x" | s1$variable=="bodyacc.y",]
+    s1$variable <- factor(s1$variable)
+    varCounts <- table(s1$variable)
+    xindex <- integer(sum(varCounts)) # preallocate to required length with zero values
+    ci <- 1 # cumulative count for vector indexing
+    for (i in varCounts) {
+        xindex[ci:(ci+i-1)] <- seq(i)
+        ci <- ci+i
+    }
+    s1$xindex <- xindex
+    # Following code is an alternative that will work only if each variable has same count
+    # xindex <- sapply(table(ss$variable), seq) # index for each variable
+    # s1$xindex <- c(xindex[,1:ncol(xindex)])
+    ggplot(s1, aes(xindex,value)) + geom_point(aes(color=namedlabel)) + facet_grid(variable~.)
+    
+    # Coloured dendogram based on body acceleration on X, Y, Z
+    dend <- as.dendrogram(hclust(dist(s1.all[, c("bodyacc.x","bodyacc.y","bodyacc.z")])))
+    labels_colors(dend) <- as.numeric(s1.all[,"namedlabel"])[order.dendrogram(dend)]
+    plot(dend)
+    
+    # Maximum acceleration on X, Y
+    par(mfrow = c(1,2))
+    plot(s1.all[, "features.tBodyAcc.max.X"], pch = 19, col = s1.all$namedlabel, ylab = "features.tBodyAcc.max.X")
+    plot(s1.all[, "features.tBodyAcc.max.Y"], pch = 19, col = s1.all$namedlabel, ylab = "features.tBodyAcc.max.Y")
+
+    # Coloured dendogram based on max acceleration on X, Y
+    par(mfrow = c(1,1))
+    dend <- as.dendrogram(hclust(dist(s1.all[, c("features.tBodyAcc.max.X","features.tBodyAcc.max.Y")])))
+    labels_colors(dend) <- as.numeric(s1.all[,"namedlabel"])[order.dendrogram(dend)]
+    plot(dend)
+
+    # SVD
+    par(mfrow = c(1,2))
+    svd1 = svd(scale(subset(s1.all, select = -c(subjectid, namedlabel))))
+    plot(svd1$u[, 1], col = s1.all$namedlabel, pch = 19)
+    plot(svd1$u[, 2], col = s1.all$namedlabel, pch = 19)
+    
+    # Maximum contributor and clustering with it
+    par(mfrow = c(1,1))
+    plot(svd1$v[, 2], pch = 19)
+    maxContrib <- names(s1.all)[which.max(svd1$v[, 2])]
+    dend <- as.dendrogram(hclust(dist(s1.all[, c("features.tBodyAcc.max.X","features.tBodyAcc.max.Y",maxContrib)])))
+    labels_colors(dend) <- as.numeric(s1.all[,"namedlabel"])[order.dendrogram(dend)]
+    plot(dend)
+
+    # k-means clustering
+    kc <- kmeans(subset(s1.all, select = -c(subjectid, namedlabel)), centers=6)
+    table(kc$cluster, s1.all$namedlabel)
+    kc <- kmeans(subset(s1.all, select = -c(subjectid, namedlabel)), centers=6, nstart=1)
+    table(kc$cluster, s1.all$namedlabel)
+    kc <- kmeans(subset(s1.all, select = -c(subjectid, namedlabel)), centers=6, nstart=100)
+    table(kc$cluster, s1.all$namedlabel)
+    plot(kc$center[1, 1:10], pch=19) # cluster 1: walking: first 10 variables
+    plot(kc$center[6, 1:10], pch=19) # cluster 1: laying: first 10 variables
+}
