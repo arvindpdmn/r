@@ -623,3 +623,111 @@ humanActivityDetection <- function() {
     plot(kc$center[1, 1:10], pch=19) # cluster 1: walking: first 10 variables
     plot(kc$center[6, 1:10], pch=19) # cluster 1: laying: first 10 variables
 }
+
+
+#==============================================================================
+# Case Study 4.3
+#==============================================================================
+# Ref: http://rstudio-pubs-static.s3.amazonaws.com/13396_c2b31645b0154f02a918b6679c4c9b2c.html
+downloadDataSources <- function() {
+    if (!file.exists("c4.3/pm2.5-1999.txt"))
+        download.file("https://raw.githubusercontent.com/jtleek/modules/master/04_ExploratoryAnalysis/CaseStudy/pm25_data/RD_501_88101_1999-0.txt", "c4.3/pm2.5-1999.txt", method="curl", quiet=T)
+    if (!file.exists("c4.3/pm2.5-2012.txt"))
+        download.file("https://raw.githubusercontent.com/jtleek/modules/master/04_ExploratoryAnalysis/CaseStudy/pm25_data/RD_501_88101_2012-0.txt", "c4.3/pm2.5-2012.txt", method="curl", quiet=T)
+}
+
+pollutionAnalysis <- function() {
+    downloadDataSources()
+
+    # Read data as data frames
+    pm0 <- read.table("c4.3/pm2.5-1999.txt", comment.char = "#", 
+                      header = FALSE, sep = "|", na.strings = "")
+    pm1 <- read.table("c4.3/pm2.5-2012.txt", comment.char = "#", 
+                      header = FALSE, sep = "|", na.strings = "")
+
+    # Give handy column names: from first line of data file
+    cnames <- readLines("c4.3/pm2.5-1999.txt", 1)
+    cnames <- strsplit(cnames, "|", fixed = TRUE)
+    names(pm0) <- make.names(cnames[[1]])
+    names(pm1) <- make.names(cnames[[1]]) # column names are same for both years
+
+    # Basic info
+    print(dim(pm0))
+    print(dim(pm1))
+    summary(pm0$Sample.Value)
+    summary(pm1$Sample.Value)
+    mean(is.na(pm0$Sample.Value)) # what proportion are NAs
+    mean(is.na(pm1$Sample.Value)) # what proportion are NAs
+    
+    # Negative values (some measurement/collection error): seen in summary for pm1
+    negs <- pm1$Sample.Value<0
+    mean(negs, na.rm=T) # what proportion are negative values 
+    dates1 <- as.Date(as.character(pm1$Date), "%Y%m%d")
+    negMonthCount <- table(factor(month.name[as.POSIXlt(dates1)$mon + 1], levels = month.name))
+    round(100*negMonthCount/sum(negMonthCount)) # shows first half of year has most negative values
+    hist(dates1, "month") # collection across months
+    hist(dates1[negs], "month") # when do negative values occur
+    
+    # Basic plotting
+    boxplot(pm0$Sample.Value, pm1$Sample.Value) # too much variance
+    boxplot(log10(pm0$Sample.Value), log10(pm1$Sample.Value)) # too much variance
+    
+    # Plotting with qplot
+    library(ggplot2)
+    pm <- rbind(pm0, pm1)
+    pm$year <- factor(rep(c(1999, 2012), c(nrow(pm0), nrow(pm1))))
+    #An alternative with plyr
+    #library(plyr)
+    #pm <- mutate(pm, year=factor(rep(c(1999, 2012), c(nrow(pm0), nrow(pm1)))))
+    set.seed(2015)
+    idx <- sample(nrow(pm), 1000) # take a sample of only 1000 points
+    qplot(year, log2(Sample.Value), data=pm[idx,], geom="boxplot", na.rm=TRUE)
+    
+    # 2012 has many more monitoring stations than 1999
+    # :this can skew the analysis if new stations were installed in cleaner locations
+    # :compare data at a particular location
+    site0 <- unique(subset(pm0, State.Code == 36, c(County.Code, Site.ID)))
+    site0 <- paste(site0[,1], site0[,2], sep=".")
+    site1 <- unique(subset(pm1, State.Code == 36, c(County.Code, Site.ID)))
+    site1 <- paste(site1[,1], site1[,2], sep=".")
+    both <- intersect(site0, site1) # identified by CountyCode & Site.ID
+    pm0$county.site <- with(pm0, paste(County.Code, Site.ID, sep = "."))
+    pm1$county.site <- with(pm1, paste(County.Code, Site.ID, sep = "."))
+    cnt0 <- subset(pm0, State.Code == 36 & county.site %in% both) # data from common sites
+    cnt1 <- subset(pm1, State.Code == 36 & county.site %in% both) # data from common sites
+    sapply(split(cnt0, cnt0$county.site), nrow)  # do counting
+    sapply(split(cnt1, cnt1$county.site), nrow)  # do counting
+    both.county <- 63; both.siteid <- 2008 # our selection based on enough observations in both years
+    pm0sub <- subset(pm0, State.Code == 36 & County.Code == both.county & Site.ID == both.siteid)
+    pm1sub <- subset(pm1, State.Code == 36 & County.Code == both.county & Site.ID == both.siteid)
+    # Now start plotting
+    dates0 <- as.Date(as.character(pm0sub$Date), "%Y%m%d") # Jul-Dec
+    x0sub <- pm0sub$Sample.Value
+    dates1 <- as.Date(as.character(pm1sub$Date), "%Y%m%d") # Jan-Apr
+    x1sub <- pm1sub$Sample.Value
+    rng <- range(x0sub, x1sub, na.rm = T) # find global range for comparing to scale
+    par(mfrow = c(1, 2), mar = c(4, 5, 2, 1))
+    plot(dates0, x0sub, pch = 20, ylim = rng, xlab = "", ylab = expression(PM[2.5] * " (" * mu * g/m^3 * ")"))
+    abline(h = median(x0sub, na.rm = T))
+    plot(dates1, x1sub, pch = 20, ylim = rng, xlab = "", ylab = expression(PM[2.5] * " (" * mu * g/m^3 * ")"))
+    abline(h = median(x1sub, na.rm = T))
+    # TODO The above analysis can be improved by comparing for same seasonal period
+
+    # State level analysis
+    mn0 <- with(pm0, tapply(Sample.Value, State.Code, mean, na.rm = TRUE))
+    mn1 <- with(pm1, tapply(Sample.Value, State.Code, mean, na.rm = TRUE))
+    summary(mn0)
+    summary(mn1)
+    d0 <- data.frame(state = names(mn0), mean = mn0)
+    d1 <- data.frame(state = names(mn1), mean = mn1)
+    mrg <- merge(d0, d1, by = "state")
+    dim(mrg) # 52 states
+    # Do the plotting: pollution decreased for most states and increased for some
+    par(mfrow = c(1, 1))
+    rng <- range(mrg[, 2], mrg[, 3])
+    with(mrg, plot(rep(1, 52), mrg[, 2], xlim = c(0.5, 2.5), ylim = rng, xaxt = "n", xlab = "", ylab = "State-wide Mean PM"))
+    with(mrg, points(rep(2, 52), mrg[, 3]))
+    segments(rep(1, 52), mrg[, 2], rep(2, 52), mrg[, 3]) # connect the points
+    axis(1, c(1, 2), c("1999", "2012"))
+    # TODO Add state names to the points. Color by +ve or -ve gradient.
+}
