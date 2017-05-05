@@ -388,6 +388,8 @@ miscExamples <- function() {
 }
 
 dataTableExamples <- function() {
+    library("data.table")
+
     # Ref. https://rawgit.com/wiki/Rdatatable/data.table/vignettes/datatable-intro.html
     DT <- data.table(ID = c("b","b","b","b","a","a","c"), A = 1:7, B = 7:13, C = 14:20)
 
@@ -584,5 +586,12 @@ secsnow <- function() {
 namer <- function() {
     df <- setNames(data.frame(as.list(1:5)), LETTERS[1:5])
     print(df[,c("A","B","E")])
+}
+
+capwords <- function(s, strict = FALSE) {
+    cap <- function(s) paste(toupper(substring(s, 1, 1)),
+                             {s <- substring(s, 2); if(strict) tolower(s) else s},
+                             sep = "", collapse = " " )
+    sapply(strsplit(s, split = " "), cap, USE.NAMES = !is.null(names(s)))
 }
 
