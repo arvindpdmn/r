@@ -1,3 +1,47 @@
+probability <- function() {
+    pbeta(0.75, 2, 1)
+    q75 <- qbeta(0.75, 2, 1) # 75th quantile
+    q75
+    pbeta(q75, 2, 1)
+
+    myHist <- function(mu) {
+        g <- ggplot(Galton, aes(x = child))
+        g <- g + geom_histogram(fill = "salmon",
+                                binwidth=1, aes(y = ..density..), color = "black")
+        g <- g + geom_density(size = 2)
+        g <- g + geom_vline(xintercept = mu, size = 2)
+        mse <- round(mean((Galton$child - mu)^2), 3)
+        g <- g + labs(title = paste('mu = ', mu, ' MSE = ', mse))
+        g
+    }
+    library(manipulate)
+    manipulate(myHist(mu), mu = slider(62, 74, step = 0.5))
+
+    # Expected value
+    x <- 1:4
+    p <- x/sum(x)
+    m <- matrix(rbind(x, p), 2)
+    sum(m[1,] * m[2,])
+    
+    # n standard normals
+    nosim <- 1000
+    n <- 10
+    sd(apply(matrix(rnorm(nosim * n), nosim), 1, mean)) # 1000 rows, 10 cols: mean by rows
+    1 / sqrt(n)
+
+    # n standard uniform distributions; pop. dist has a variance of sqrt(12)
+    sd(apply(matrix(runif(nosim * n), nosim), 1, mean)) # 1000 rows, 10 cols: mean by rows
+    1 / sqrt(12*n)
+
+    # n Poisson(4); pop. dist has a variance of 4
+    sd(apply(matrix(rpois(nosim * n, 4), nosim), 1, mean)) # 1000 rows, 10 cols: mean by rows
+    2 / sqrt(n)
+
+    # means of n coin flips; fair coin flips have a variance of 0.25: p*(1-p) 
+    sd(apply(matrix(sample(0:1, nosim * n, replace = T), nosim), 1, mean)) # 1000 rows, 10 cols: mean by rows
+    1 / (2 *sqrt(n))
+}
+
 mycolors <- function() {
     cc <- colorRamp(c("red","blue"))
     cc(0) # only red
@@ -36,7 +80,8 @@ dimensionReduction <- function() {
     set.seed(12345)
     d <- matrix(rnorm(400), nrow=40)
     image(1:10, 1:40, t(d)[, nrow(d):1]) # no pattern here
-
+    heatmap(d)
+    
     # simulate a pattern within the data
     set.seed(678910)
     for (i in 1:40) {
@@ -55,7 +100,7 @@ dimensionReduction <- function() {
     plot(colMeans(dOrdered), xlab="Column", ylab="Column Mean")
     
     # Singular Value Decomposition
-    s <- svd(scale(dOrdered))
+    s <- svd(scale(dOrdered)) # normalize by columns first before SVD
     par(mfrow = c(1,3))
     image(1:10, 1:40, t(dOrdered)[, nrow(dOrdered):1])
     plot(s$u[, 1], 40:1, xlab="Row", ylab="First left singular vector")
@@ -68,6 +113,20 @@ dimensionReduction <- function() {
     p <- prcomp(dOrdered, scale=T)
     plot(p$rotation[, 1], s$v[, 1], xlab="Principal component 1", ylab="Right singular value 1")
     plot(p$rotation[, 2], s$v[, 2], xlab="Principal component 2", ylab="Right singular value 2")
+
+    # Face data
+    load("data/face.rda")
+    image(t(faceData)[, nrow(faceData):1])
+    svd1 <- svd(scale(faceData))
+    plot(svd1$d^2/sum(svd1$d^2), pch = 19, xlab = "Singular vector", ylab = "Variance explained")
+    approx1 <- svd1$u[, 1] %*% t(svd1$v[, 1]) * svd1$d[1] # only 1st component
+    approx5 <- svd1$u[, 1:5] %*% diag(svd1$d[1:5]) %*% t(svd1$v[, 1:5])
+    approx10 <- svd1$u[, 1:10] %*% diag(svd1$d[1:10]) %*% t(svd1$v[, 1:10])
+    par(mfrow = c(1, 4))
+    image(t(approx1)[, nrow(approx1):1], main = "1 vector")
+    image(t(approx5)[, nrow(approx5):1], main = "5 vectors")
+    image(t(approx10)[, nrow(approx10):1], main = "10 vectors")
+    image(t(faceData)[, nrow(faceData):1], main = "Original data")
 }
 
 clustering <- function() {
@@ -79,18 +138,20 @@ clustering <- function() {
     plot(x, y, col="blue", pch=19, cex=2)
     text(x+0.05, y+0.05, labels=as.character(1:12))
     d <- data.frame(x, y)
-    distances <- dist(d)
+    distances <- dist(d) # find pair-wise distances of all points (Euclidean by default)
     hClusters <- hclust(distances)
-    plot(hClusters)
+    names(hClusters)
+    plot(hClusters) # cluster dendrogram: manually decide where to cut and get no. of clusters
     heatmap(data.matrix(d))
     
     # kmeans
+    d <- d[sample(1:12),] # randomize the rows
     k <- kmeans(d, centers=3)
     plot(x, y, col=k$cluster, pch=19, cex=2)
     points(k$centers, col=1:3, pch=3, cex=3, lwd=3) # plot cluster centers
+    par(mfrow = c(1,2))
     image(t(d)[, nrow(d):1], yaxt="n") # heatmap in original order
     image(t(d)[, order(k$cluster)], yaxt="n") # heatmap ordered by cluster
-    par(mfrow = c(1,2))
 }
 
 ggplotExamples <- function() {
