@@ -1,1 +1,6 @@
 .Rhistory
+.RData
+
+*.html
+
+rsconnect/

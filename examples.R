@@ -315,6 +315,7 @@ dplyrExamples <- function() {
     library(dplyr)
     
     df <- data.frame(ID = c("b","b","b","b","a","a","c"), A = 1:7, B = 7:13, C = 14:20)
+    df[,c("ID", "A", "B")] # explicitly name all desired columns: clunky for many columns
     df[,match("ID", colnames(df)):match("B", colnames(df))] # a range of cols by name
     select(df, ID:B) # lot easier with dplyr
     select(df, -(ID:B))
