@@ -74,7 +74,7 @@ colSums(iris[-5])
 rowSums(iris[-5])
 summary(iris)
 
-# More suitable stats by SpeciesK
+# More suitable stats by Species
 aggregate(Sepal.Length ~ Species, data=iris, summary)
 aggregate(. ~ Species, data=iris, summary)
 aggregate(. ~ Species, data=iris, mean)
@@ -175,7 +175,7 @@ plen +
   common_theme()
 ```
 
-In the above example, each species is differentiated by shape of the point. But we don't see any legend to indicate which shape represents which species. Try the following as arguments to `geom_point()`:
+In the above example, each species is differentiated by shape of the point. You can see the list of shapes in the help for `points()` function. But we don't see any legend to indicate which shape represents which species. Try the following as arguments to `geom_point()`:
 
 * Differentiate by colour: `aes(colour=Species)`
 * Increase the size of points: `size=2`
@@ -425,6 +425,13 @@ ggplot(attc, aes(x=Sex, y=Freq, fill=Survived)) +
 ```
 
 We can see that 1st and 2nd class female passengers got priority. A deviation is 3rd class female passengers: more died than survived. In all classes, more male passengers died than survived in that class.
+
+Try the following:
+
+* Analyze by Age and Class: use `attc <- aggregate(. ~ Class+Survived+Sex+Age, data=ttc, sum)` and `facet_grid(Age~Class, scales="free_y")`
+* Plot horizontal bars rather than vertical bars.
+* Adjust width of bars and spacing between bars.
+* Give non-default colours to the bars.
 
 
 ## 7.0 Further Reading
